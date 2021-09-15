@@ -7,6 +7,8 @@ LABEL org.opencontainers.image.source="https://github.com/netsandbox/docker-rt"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+RUN groupadd --gid 1000 --system rt && useradd --uid 1000 --gid rt --system --home-dir /opt/rt5 rt
+
 WORKDIR /usr/local/src
 # hadolint ignore=DL3003,SC2174
 RUN curl -fsSL "https://download.bestpractical.com/pub/rt/release/rt-5.0.2.tar.gz" -o rt.tar.gz \
@@ -25,7 +27,8 @@ RUN curl -fsSL "https://download.bestpractical.com/pub/rt/release/rt-5.0.2.tar.g
   && make install \
   && mkdir --mode=0600 --parents /opt/rt5/var/data/{gpg,smime} \
   && make initialize-database \
-  && cd .. && rm -rf /usr/local/src/*
+  && cd .. && rm -rf /usr/local/src/* \
+  && chown -R rt:rt /opt/rt5
 
 WORKDIR /opt/rt5
 COPY RT_SiteConfig.pm etc/
@@ -34,6 +37,8 @@ VOLUME /opt/rt5
 
 COPY docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
+
+USER rt
 
 EXPOSE 80
 CMD ["/opt/rt5/sbin/rt-server"]
